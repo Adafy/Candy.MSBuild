@@ -52,6 +52,8 @@ var documentJson = await GenerateSwaggerFromControllers(nswagJson, documentSetti
 
 await GenerateClientsFromSwagger(nswagJson, workingDir, documentJson);
 
+Console.WriteLine("Completed");
+
 async Task<string> GenerateSwaggerFromControllers(JObject jObject, WebApiOpenApiDocumentGeneratorSettings webApiOpenApiDocumentGeneratorSettings, string dir)
 {
     // Read some of the configuration parameters from the nswag configuration file
@@ -124,7 +126,6 @@ async Task GenerateClientsFromSwagger(JObject nswagConfig, string workingDir1, s
         nswagDocument.SelectedSwaggerGenerator = new FromDocumentCommand() { Json = swaggerJson };
 
         var res = await nswagDocument.ExecuteAsync();
-        Console.WriteLine("Completed");
     }
     catch (Exception e)
     {
