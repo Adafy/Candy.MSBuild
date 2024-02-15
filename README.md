@@ -45,7 +45,7 @@ New:
 ```
   <Target Name="NSwag" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug' AND '$(TargetFramework)' == 'net6.0' ">
     <Copy SourceFiles="@(Reference)" DestinationFolder="$(OutDir)References" />
-    <Exec Command="$(Candy) run nswag.json" />
+    <Exec Command="$(Candy) nswag.json" />
     <RemoveDir Directories="$(OutDir)References" />
   </Target>
 ```
