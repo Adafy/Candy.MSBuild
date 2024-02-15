@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Candy>dotnet "$(MSBuildThisFileDirectory)../tools/Net80/candy-msbuild.dll"</Candy>
+  </PropertyGroup>
+</Project>
