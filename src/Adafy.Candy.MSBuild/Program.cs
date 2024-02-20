@@ -48,34 +48,36 @@ var configuration = File.ReadAllText(configurationFilePath);
 
 var nswagJson = JObject.Parse(configuration);
 
-var documentJson = await GenerateSwaggerFromControllers(nswagJson, documentSettings, workingDir);
-
-await GenerateClientsFromSwagger(nswagJson, workingDir, documentJson);
+// Process 
+var documentJson = await GenerateSwaggerFromControllers();
+await GenerateClientsFromSwagger(documentJson);
 
 Console.WriteLine("Completed");
 
-async Task<string> GenerateSwaggerFromControllers(JObject jObject, WebApiOpenApiDocumentGeneratorSettings webApiOpenApiDocumentGeneratorSettings, string dir)
+async Task<string> GenerateSwaggerFromControllers()
 {
     // Read some of the configuration parameters from the nswag configuration file
-    var outputType = jObject["documentGenerator"]["webApiToOpenApi"]["outputType"].Value<string>();
+    var outputType = nswagJson["documentGenerator"]["webApiToOpenApi"]["outputType"].Value<string>();
 
-    webApiOpenApiDocumentGeneratorSettings.SchemaSettings.SchemaType = string.Equals("swagger2", outputType, StringComparison.InvariantCultureIgnoreCase)
+    documentSettings.SchemaSettings.SchemaType = string.Equals("swagger2", outputType, StringComparison.InvariantCultureIgnoreCase)
         ? SchemaType.Swagger2
         : SchemaType.OpenApi3;
-    webApiOpenApiDocumentGeneratorSettings.Title = jObject["documentGenerator"]["webApiToOpenApi"]["infoTitle"].Value<string>();
-    webApiOpenApiDocumentGeneratorSettings.Description = jObject["documentGenerator"]["webApiToOpenApi"]["infoDescription"].Value<string>();
-    webApiOpenApiDocumentGeneratorSettings.Version = jObject["documentGenerator"]["webApiToOpenApi"]["infoVersion"].Value<string>();
-    var output = jObject["documentGenerator"]["webApiToOpenApi"]["output"].Value<string>();
+    documentSettings.Title = nswagJson["documentGenerator"]["webApiToOpenApi"]["infoTitle"].Value<string>();
+    documentSettings.Description = nswagJson["documentGenerator"]["webApiToOpenApi"]["infoDescription"].Value<string>();
+    documentSettings.Version = nswagJson["documentGenerator"]["webApiToOpenApi"]["infoVersion"].Value<string>();
+    var output = nswagJson["documentGenerator"]["webApiToOpenApi"]["output"].Value<string>();
 
     var assemblyPaths =
-        ((JArray)jObject["documentGenerator"]["webApiToOpenApi"]["assemblyPaths"]).Select(x => x.Value<string>());
+        ((JArray)nswagJson["documentGenerator"]["webApiToOpenApi"]["assemblyPaths"]).Select(x => x.Value<string>());
+    
+    var controllerNames = ((JArray)nswagJson["documentGenerator"]["webApiToOpenApi"]["controllerNames"] ?? new()).Select(x => x.Value<string>()).ToList();
 
     // Load the controllers from the assemblies
     var assemblyPlugins = new List<AssemblyPluginCatalog>();
 
     foreach (var assemblyPath in assemblyPaths)
     {
-        var fullPath = Path.Combine(dir, assemblyPath);
+        var fullPath = Path.Combine(workingDir, assemblyPath);
         var assemblyFolder = Path.GetDirectoryName(fullPath);
         var assemblyReferencesFolder = Path.Combine(assemblyFolder, "References");
 
@@ -98,24 +100,31 @@ async Task<string> GenerateSwaggerFromControllers(JObject jObject, WebApiOpenApi
     await compositePlugin.Initialize();
 
     // Run the first part: Controllers -> Swagger
-    var generator = new WebApiOpenApiDocumentGenerator(webApiOpenApiDocumentGeneratorSettings);
-    var document = await generator.GenerateForControllersAsync(compositePlugin.GetPlugins().Select(x => x.Type));
+    var generator = new WebApiOpenApiDocumentGenerator(documentSettings);
+    var controllerTypes = compositePlugin.GetPlugins().Select(x => x.Type).ToList();
 
-    var outputFilePath = Path.Combine(dir, output);
-    var documentJson1 = document.ToJson();
-    File.WriteAllText(outputFilePath, documentJson1);
+    if (controllerNames.Any())
+    {
+        controllerTypes = controllerTypes.Where(x => controllerNames.Contains(x.FullName)).ToList();
+    }    
+    
+    var document = await generator.GenerateForControllersAsync(controllerTypes);
 
-    return documentJson1;
+    var outputFilePath = Path.Combine(workingDir, output);
+    var result = document.ToJson();
+    File.WriteAllText(outputFilePath, result);
+
+    return result;
 }
 
-async Task GenerateClientsFromSwagger(JObject nswagConfig, string workingDir1, string swaggerJson)
+async Task GenerateClientsFromSwagger(string swaggerJson)
 {
     // Generate a temp nswag json configuration file which contains only the configured code generator
     // Make sure to generate it to the same folder as the original nswag.json is
-    nswagConfig.Remove("documentGenerator");
-    var tmpFilePath = Path.Combine(workingDir1, Path.GetRandomFileName());
+    nswagJson.Remove("documentGenerator");
+    var tmpFilePath = Path.Combine(workingDir, Path.GetRandomFileName());
 
-    File.WriteAllText(tmpFilePath, nswagConfig.ToString());
+    File.WriteAllText(tmpFilePath, nswagJson.ToString());
 
     try
     {
