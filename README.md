@@ -21,7 +21,7 @@ New:
 
 ```
   <ItemGroup>
-    <PackageReference Include="Candy.MSBuild" Version="1.0.0">
+    <PackageReference Include="Candy.MSBuild" Version="1.2.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -43,7 +43,7 @@ Old:
 New:
 
 ```
-  <Target Name="NSwag" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug' AND '$(TargetFramework)' == 'net6.0' ">
+  <Target Name="NSwag" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug' AND '$(TargetFramework)' == 'net8.0' ">
     <Copy SourceFiles="@(Reference)" DestinationFolder="$(OutDir)References" />
     <Exec Command="$(Candy) nswag.json" />
     <RemoveDir Directories="$(OutDir)References" />
