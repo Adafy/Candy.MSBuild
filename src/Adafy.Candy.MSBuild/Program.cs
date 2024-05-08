@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,7 +13,7 @@ using NSwag.Generation.WebApi;
 using Weikio.PluginFramework.Catalogs;
 using Weikio.PluginFramework.Context;
 
-// Default configuration, can not be customized for now
+// Default configuration, can be partly overwritten from the nswag.json
 var documentSettings = new WebApiOpenApiDocumentGeneratorSettings
 {
     IsAspNetCore = true,
@@ -48,11 +48,38 @@ var configuration = File.ReadAllText(configurationFilePath);
 
 var nswagJson = JObject.Parse(configuration);
 
+ReadConfiguration(nswagJson, documentSettings);
+
 // Process 
 var documentJson = await GenerateSwaggerFromControllers();
 await GenerateClientsFromSwagger(documentJson);
 
 Console.WriteLine("Completed");
+
+void ReadConfiguration(JObject nswagJson, WebApiOpenApiDocumentGeneratorSettings documentSetting)
+{
+    SetDefaultResponseReferenceTypeNullHandling(nswagJson, documentSetting);
+}
+
+void SetDefaultResponseReferenceTypeNullHandling(JObject jObject, WebApiOpenApiDocumentGeneratorSettings webApiOpenApiDocumentGeneratorSettings)
+{
+    try
+    {
+        var responseNullHandling = jObject["documentGenerator"]["webApiToOpenApi"]["defaultResponseReferenceTypeNullHandling"].Value<string>();
+
+        webApiOpenApiDocumentGeneratorSettings.DefaultResponseReferenceTypeNullHandling = responseNullHandling switch
+        {
+            "Null" => ReferenceTypeNullHandling.Null,
+            "NotNull" => ReferenceTypeNullHandling.NotNull,
+            _ => ReferenceTypeNullHandling.Null
+        };
+    }
+    catch
+    {
+        Console.WriteLine($"Failed to read defaultResponseReferenceTypeNullHandling, assuming {documentSettings.DefaultResponseReferenceTypeNullHandling}");
+    }
+
+}
 
 async Task<string> GenerateSwaggerFromControllers()
 {
