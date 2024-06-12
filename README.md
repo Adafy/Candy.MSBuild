@@ -21,7 +21,7 @@ New:
 
 ```
   <ItemGroup>
-    <PackageReference Include="Candy.MSBuild" Version="1.2.0">
+    <PackageReference Include="Candy.MSBuild" Version="1.2.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
